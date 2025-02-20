@@ -1,1 +1,1 @@
-# degradation-graphs
+# Modelling protein degradation graphs
