@@ -9,18 +9,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
+sns.set_context("paper")
 from proteolysis_simulator import Enzyme, ProteolysisSimulator
 
 actb = "MDDDIAALVVDNGSGMCKAGFAGDDAPRAVFPSIVGRPRHQGVMVGMGQKDSYVGDEAQSKRGILTLKYPIEHGIVTNWDDMEKIWHHTFYNELRVAPEEHPVLLTEAPLNPKANREKMTQIMFETFNTPAMYVAIQAVLSLYASGRTTGIVMDSGDGVTHTVPIYEGYALPHAILRLDLAGRDLTDYLMKILTERGYSFTTTAEREIVRDIKEKLCYVALDFEQEMATAASSSSLEKSYELPDGQVITIGNERFRCPEALFQPSFLGMESCGIHETTFNSIMKCDVDIRKDLYANTVLSGGTTMYPGIADRMQKEITALAPSTMKIKIIAPPERKYSVWIGGSILASLSTFQQMWISKQEYDESGPSIVHRKCF"
+hbb = "MVHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH"
+thrb = "MAHVRGLQLPGCLALAALCSLVHSQHVFLAPQQARSLLQRVRRANTFLEEVRKGNLERECVEETCSYEEAFEALESSTATDVFWAKYTACETARTPRDKLAACLEGNCAEGLGTNYRGHVNITRSGIECQLWRSRYPHKPEINSTTHPGADLQENFCRNPDSSTTGPWCYTTDPTVRRQECSIPVCGQDQVTVAMTPRSEGSSVNLSPPLEQCVPDRGQQYQGRLAVTTHGLPCLAWASAQAKALSKHQDFNSAVQLVENFCRNPDGDEEGVWCYVAGKPGDFGYCDLNYCEEAVEEETGDGLDEDSDRAIEGRTATSEYQTFFNPRTFGSGEADCGLRPLFEKKSLEDKTERELLESYIDGRIVEGSDAEIGMSPWQVMLFRKSPQELLCGASLISDRWVLTAAHCLLYPPWDKNFTENDLLVRIGKHSRTRYERNIEKISMLEKIYIHPRYNWRENLDRDIALMKLKKPVAFSDYIHPVCLPDRETAASLLQAGYKGRVTGWGNLKETWTANVGKGQPSVLQVVNLPIVERPVCKDSTRIRITDNMFCAGYKPDEGKRGDACEGDSGGPFVMKSPFNNRWYQMGIVSWGEGCDRDGKYGFYTHVFRLKKWIQKVIDQFGE"
+apoa1 = "MKAAVLTLAVLFLTGSQARHFWQQDEPPQSPWDRVKDLATVYVDVLKDSGRDYVSQFEGSALGKQLNLKLLDNWDSVTSTFSKLREQLGPVTQEFWDNLEKETEGLRQEMSKDLEEVKAKVQPYLDDFQKKWQEEMELYRQKVEPLRAELQEGARQKLHELQEKLSPLGEEMRDRARAHVDALRTHLAPYSDELRQRLAARLEALKENGGARLAEYHAKATEHLSTLSEKAKPALEDLRQGLLPVLESFKVSFLSALEEYTKKLNTQ"
 
-sns.set_context("paper")
-
+def define_proteins():
+    """Define all protein sequences."""
+    return {
+        "ACTB": actb,
+        "HBB": hbb,
+        "THRB": thrb,
+        "APOA1": apoa1
+    }
 
 def define_train_enzymes():
     return {
-        "trypsin": Enzyme([("(.)(.)([R|K])([^P])(.)(.)", 1)]),
-        "elastase": Enzyme([("(.)(.)([V|I|A|S|L|G])(.)(.)(.)", 1)]),
+        "trypsin": Enzyme([("(.)(.)([R|K])([^P])(.)(.)", 3), ("(.)(.)(.)(.)(.)(.)", 1)]),
+        "elastase": Enzyme([("(.)(.)([V|I|A|S|L|G])(.)(.)(.)", 3), ("(.)(.)(.)(.)(.)(.)", 1)]),
     }
 
 
@@ -56,7 +65,7 @@ def get_position_features(peptide, parent_sequence):
     return torch.tensor([normalized_start, normalized_end, normalized_length], dtype=torch.float)
 
 
-def generate_dataset_for_training(enzymes, n_samples=100, sequence=actb):
+def generate_dataset_for_training(enzymes, n_samples=100, sequence=actb, protein_name="ACTB"):
 
     ps = ProteolysisSimulator(verbose=False)
     
@@ -65,6 +74,7 @@ def generate_dataset_for_training(enzymes, n_samples=100, sequence=actb):
     dataset = []
     labels = []
     enzyme_types = []
+    protein_names = []
     raw_abundance_list = []
 
     for enzyme_name, enzyme in enzymes.items():
@@ -112,9 +122,10 @@ def generate_dataset_for_training(enzymes, n_samples=100, sequence=actb):
             dataset.append(data)
             labels.append(class_idx)
             enzyme_types.append(enzyme_name)
+            protein_names.append(protein_name)
             raw_abundance_list.append((abundances.numpy(), class_idx))
 
-    return dataset, labels, enzyme_types, raw_abundance_list
+    return dataset, labels, enzyme_types, protein_names, raw_abundance_list
 
 
 
@@ -196,7 +207,6 @@ def train_and_evaluate(train_dataset, val_dataset, epochs=50):
     fpr, tpr, _ = roc_curve(labels, elastase_probs)
     roc_auc = auc(fpr, tpr)
     
-    precision, recall, _ = precision_recall_curve(labels, elastase_probs)
     pr_auc = average_precision_score(labels, elastase_probs)
     
     fig, ax = plt.subplots(1, 1, figsize=(2, 2))
@@ -210,7 +220,7 @@ def train_and_evaluate(train_dataset, val_dataset, epochs=50):
     
     sns.despine()
     plt.tight_layout()
-    plt.savefig('roc_pr_curves.png', 
+    plt.savefig('results/figures/roc_curve.png', 
                 dpi=300, bbox_inches='tight')
 
     
@@ -221,81 +231,183 @@ def train_and_evaluate(train_dataset, val_dataset, epochs=50):
     return model, roc_auc, pr_auc
 
 
-def plot_enzyme_distributions(model, train_dataset, device):
-
+def plot_multi_protein_roc(model, val_dataset, val_proteins, val_enzymes, device):
+    """Plot ROC curves for all protein-enzyme combinations."""
     model.eval()
-
-
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=False)
-
-    trypsin_probs = []
-    elastase_probs = []
-
-
+    
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+    
+    # Get predictions
+    all_probs = []
+    all_labels = []
+    
     with torch.no_grad():
-        for data in train_loader:
+        for data in val_loader:
             data = data.to(device)
             out = model(data.x, data.edge_index, data.batch)
             probs = torch.exp(out).cpu().numpy()
-
-
-            for i, label in enumerate(data.y.cpu().numpy()):
-                if label == 0:  # Trypsin
-                    trypsin_probs.append(probs[i, 1])  
-                elif label == 1:  # elastase
-                    elastase_probs.append(probs[i, 1])
-
-
-    df = pd.DataFrame({
-        'Enzyme': ['Trypsin'] * len(trypsin_probs) +
-                  ['Elastase'] * len(elastase_probs),
-        'Elastase Probability': trypsin_probs + elastase_probs
-    })
-
-    colors = {
-        'Trypsin': '#3274A1',
-        'Elastase': '#45a884',
-        'Mixed': '#f5b342'
-    }
+            all_probs.append(probs)
+            all_labels.append(data.y.cpu().numpy())
     
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), gridspec_kw={'width_ratios': [1, 1]})
-
-    # Plot KDE
-    g = sns.kdeplot(
-        data=df, x='Elastase Probability', hue='Enzyme',
-        palette=colors, fill=True, alpha=0.5, linewidth=2,
-        common_norm=False, ax=ax1
-    )
-
-    g.legend().remove()
-
-    ax1.set_xlabel('Elastase Probability')
-    ax1.set_ylabel('Density')
+    all_probs = np.vstack(all_probs)
+    all_labels = np.concatenate(all_labels)
     
-    sns.boxplot(
-        data=df, x='Enzyme', y='Elastase Probability', 
-        palette=colors, width=0.6, ax=ax2
-    )
+    # Organize data by protein (not protein-enzyme)
+    protein_data = {}
+    for i, (protein, enzyme, label) in enumerate(zip(val_proteins, val_enzymes, all_labels)):
+        if protein not in protein_data:
+            protein_data[protein] = {'probs': [], 'labels': []}
+        protein_data[protein]['probs'].append(all_probs[i, 1])  # elastase probability
+        protein_data[protein]['labels'].append(label)  # 0=trypsin, 1=elastase
     
-    sns.stripplot(
-        data=df, x='Enzyme', y='Elastase Probability',
-        color='black', size=3, alpha=0.4, ax=ax2,
-        jitter=True
-    )
+    # Debug: Print data distribution
+    print("\nValidation set distribution by protein:")
+    for protein, data in protein_data.items():
+        labels = np.array(data['labels'])
+        n_trypsin = np.sum(labels == 0)
+        n_elastase = np.sum(labels == 1)
+        print(f"  {protein}: {len(labels)} samples (Trypsin: {n_trypsin}, Elastase: {n_elastase})")
     
-    ax2.set_xlabel('Enzyme')
-    ax2.set_ylabel('elastase Probability')
+    # Plot settings
+    proteins = list(define_proteins().keys())
+    protein_colors = {'ACTB': '#3274A1', 'HBB': '#E74C3C', 'THRB': '#45a884', 'APOA1': '#f5b342'}
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+
+    curves_plotted = 0
+    
+    # Plot per-protein ROC curves
+    for protein in proteins:
+        if protein in protein_data:
+            probs = np.array(protein_data[protein]['probs'])
+            labels = np.array(protein_data[protein]['labels'])
+            
+            # Check if we have both classes and sufficient data
+            if len(np.unique(labels)) > 1 and len(labels) > 3:
+                fpr, tpr, _ = roc_curve(labels, probs)
+                roc_auc = auc(fpr, tpr)
+                
+                ax.plot(fpr, tpr, 
+                       color=protein_colors[protein], 
+                       linewidth=2,
+                       label=f'{protein} (AUC={roc_auc:.3f})')
+                curves_plotted += 1
+            else:
+                print(f"  Skipping {protein}: insufficient data or single class")
+    
+    # Add overall ROC curve (all proteins combined)
+    all_probs_combined = all_probs[:, 1]
+    fpr_overall, tpr_overall, _ = roc_curve(all_labels, all_probs_combined)
+    auc_overall = auc(fpr_overall, tpr_overall)
+    
+    ax.plot(fpr_overall, tpr_overall, 
+           color='black', 
+           linewidth=3,
+           linestyle='--',
+           label=f'Overall (AUC={auc_overall:.3f})')
+    curves_plotted += 1
+    
+    ax.plot([0, 1], [0, 1], 'k--', alpha=0.3, linewidth=1)
+    ax.set_xlim([0, 1])
+    ax.set_ylim([0, 1])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title(f'ROC Curves: Enzyme Classification by Protein')
+    
+    if curves_plotted > 0:
+        ax.legend(loc='lower right', fontsize=9)
+    else:
+        ax.text(0.5, 0.5, 'No valid curves\n(insufficient data)', 
+                ha='center', va='center', transform=ax.transAxes)
     
     sns.despine()
     plt.tight_layout()
+    plt.savefig('results/figures/multi_protein_roc.png', dpi=300, bbox_inches='tight')
     
-    plt.savefig('enzyme_distributions.png', 
-                dpi=300, bbox_inches='tight')
+    print(f"ROC plot saved with {curves_plotted} curves (4 per-protein + 1 overall)")
+ 
 
-    return {
-        'Trypsin': np.mean(trypsin_probs),
-        'Elastase': np.mean(elastase_probs),
-    }
+
+def plot_enzyme_distributions(model, val_dataset, device):
+    """Plot KDE distributions in 2x2 subplots for each protein."""
+    model.eval()
+    
+    # Get predictions for all validation data
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+    
+    all_probs = []
+    all_labels = []
+    
+    with torch.no_grad():
+        for data in val_loader:
+            data = data.to(device)
+            out = model(data.x, data.edge_index, data.batch)
+            probs = torch.exp(out).cpu().numpy()
+            all_probs.append(probs)
+            all_labels.append(data.y.cpu().numpy())
+    
+    all_probs = np.vstack(all_probs)
+    all_labels = np.concatenate(all_labels)
+    
+    # Organize data by protein
+    proteins = list(define_proteins().keys())
+    colors = {'Trypsin': '#3274A1', 'Elastase': '#45a884'}
+    
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    axes = axes.flatten()
+    
+    for idx, protein in enumerate(proteins):
+        ax = axes[idx]
+        
+        # Get indices for this protein from validation set
+        protein_indices = [i for i, p in enumerate(val_proteins) if p == protein]
+        
+        if protein_indices:
+            protein_probs = all_probs[protein_indices]
+            protein_labels = all_labels[protein_indices]
+            
+            trypsin_probs = []
+            elastase_probs = []
+            
+            for i, label in enumerate(protein_labels):
+                if label == 0:  # Trypsin
+                    trypsin_probs.append(protein_probs[i, 1])
+                elif label == 1:  # Elastase  
+                    elastase_probs.append(protein_probs[i, 1])
+            
+            # Create DataFrame for this protein
+            df = pd.DataFrame({
+                'Enzyme': ['Trypsin'] * len(trypsin_probs) + ['Elastase'] * len(elastase_probs),
+                'Elastase Probability': trypsin_probs + elastase_probs
+            })
+            
+            # Plot KDE for this protein
+            if len(df) > 0:
+                sns.kdeplot(
+                    data=df, x='Elastase Probability', hue='Enzyme',
+                    palette=colors, fill=True, alpha=0.5, linewidth=2,
+                    common_norm=False, ax=ax
+                )
+            
+            ax.set_title(f'{protein}', fontsize=12)
+            ax.set_xlabel('Elastase Probability')
+            ax.set_ylabel('Density')
+            
+            # Remove legend from individual subplots
+            if ax.get_legend():
+                ax.get_legend().remove()
+    
+    # Add a single legend to the figure
+    handles, labels = axes[0].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.02), ncol=2)
+    
+    sns.despine()
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.1)
+    
+    plt.savefig('results/figures/enzyme_distributions.png', dpi=300, bbox_inches='tight')
+ 
 
 
 if __name__ == "__main__":
@@ -304,31 +416,48 @@ if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-
-    print("Generating synthetic dataset...")
+    # Generate datasets for all proteins
+    print("Generating synthetic datasets for all proteins...")
+    proteins = define_proteins()
     train_enzymes = define_train_enzymes()
-    dataset, labels, enzyme_types, _ = generate_dataset_for_training(
-        train_enzymes, n_samples=50, sequence=actb
-    )
+    
+    all_datasets = []
+    all_labels = []
+    all_enzyme_types = []
+    all_protein_names = []
+    
+    for protein_name, sequence in proteins.items():
+        print(f"Processing {protein_name}...")
+        dataset, labels, enzyme_types, protein_names, _ = generate_dataset_for_training(
+            train_enzymes, n_samples=500, sequence=sequence, protein_name=protein_name
+        )
+        all_datasets.extend(dataset)
+        all_labels.extend(labels)
+        all_enzyme_types.extend(enzyme_types)
+        all_protein_names.extend(protein_names)
 
-    print(f"Generated {len(dataset)} samples")
-    print(f"Class distribution: {np.bincount(np.array(labels))}")
+    print(f"\nGenerated {len(all_datasets)} total samples")
+    print(f"Class distribution: {np.bincount(np.array(all_labels))}")
     
-    train_dataset, val_dataset, train_labels, val_labels = train_test_split(
-        dataset, labels, test_size=0.2, random_state=42, stratify=labels
+
+    
+    # Split data
+    train_dataset, val_dataset, train_labels, val_labels, train_proteins, val_proteins, train_enzymes_split, val_enzymes_split = train_test_split(
+        all_datasets, all_labels, all_protein_names, all_enzyme_types, 
+        test_size=0.2, random_state=42, stratify=all_labels
     )
     
-    print(f"Training set: {len(train_dataset)} samples")
+    print(f"\nTraining set: {len(train_dataset)} samples")
     print(f"Validation set: {len(val_dataset)} samples")
     print(f"Feature dimensionality: {train_dataset[0].x.shape[1]}")
 
-    best_model, roc_auc, pr_auc = train_and_evaluate(train_dataset, val_dataset, epochs=10)
+    model, roc_auc, pr_auc = train_and_evaluate(train_dataset, val_dataset, epochs=10)
     
-
-    mean_probs = plot_enzyme_distributions(best_model, val_dataset, device)
-
-    print("\nMean elastase probabilities by enzyme type:")
-    for enzyme, prob in mean_probs.items():
-        print(f"{enzyme}: {prob:.4f}")
+    # Plot multi-protein ROC curves
+    print("\nGenerating ROC curves for all protein-enzyme combinations...")
+    plot_multi_protein_roc(model, val_dataset, val_proteins, val_enzymes_split, device)
     
+    # Plot KDE distributions
+    print("Generating KDE distributions...")
+    plot_enzyme_distributions(model, val_dataset, device)
 

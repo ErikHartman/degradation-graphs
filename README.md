@@ -62,7 +62,7 @@ protein_sequence = "MDDDIAALVVDNGSGMCKAGFAGDDAPRAVFPSIVGRPR"
 
 # Initialize simulator and generate peptides
 simulator = ProteolysisSimulator(protein_sequence)
-peptides = simulator.simulate_digestion(trypsin, n_steps=100)
+peptides = simulator.simulate_digestion(trypsin, n_steps=100) # This is now a dict of peptide:abundance
 ```
 
 ### Graph Neural Network for Enzyme Activity Prediction

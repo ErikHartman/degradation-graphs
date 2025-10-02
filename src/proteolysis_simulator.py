@@ -1,23 +1,13 @@
 import re
 import numpy as np
-import networkx as nx  # type: ignore
-from scipy.stats import gamma  # type: ignore
+import networkx as nx
+from scipy.stats import gamma
 
 
 class Enzyme:
     """
     Represents an enzyme that defines how endoproteolytic cleavage sites
     are determined via regex patterns.
-
-    Example cleavage_rules: [("(.)(.)([RK])([^P])(.)(.)", 1)]
-      This means: for each match of the given regex in the extended sequence
-      'XsequenceX', add `amount=1` to the cleavage site near that match.
-
-    Attributes:
-    -----------
-    cleavage_rules : list of (pattern, weight)
-        Each pattern is a regex string; weight is how much that pattern contributes
-        to the cleavage probability at each matched site.
     """
 
     def __init__(self, cleavage_rules):
@@ -36,8 +26,6 @@ class Enzyme:
         """
         n = len(sequence)
         # Probability array for cutting between i and i+1
-        # We'll store it in the same indexing as your original approach
-        # so that cleavage_probs[i] means "cut occurs after i residues".
         cleavage_probs = np.zeros(n)
 
         # Extend sequence with dummy chars to handle boundary conditions
@@ -48,14 +36,12 @@ class Enzyme:
         for pattern, weight in self.cleavage_rules:
             regex = re.compile(pattern)
             for match in regex.finditer(extended_seq):
-                # your original offset logic was match.start() + 2
                 cleavage_index = match.start() + 2
                 if 0 <= cleavage_index < n:
                     cleavage_probs[cleavage_index] += weight
                     total_score += weight
 
         if total_score == 0:
-            # fallback: if no cleavage rule matched, use uniform
             cleavage_probs[:] = 1.0
             total_score = float(n)
 
@@ -370,11 +356,6 @@ class ProteolysisSimulator:
         self-edge probability is computed as:
           P(self-edge) = P_Y[node] / (sum_of_outgoing_counts + P_Y[node])
         Then the remainder is distributed among outgoing edges proportionally.
-
-        Returns
-        -------
-        Gprob : nx.DiGraph
-            The probability graph, or None if self.Gamma is None.
         """
         if self.Gamma is None:
             return None

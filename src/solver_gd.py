@@ -14,22 +14,6 @@ def run_gradient_descent(
     Solve for node absorption distribution using a gradient descent approach.
     Each node j has (out_degree(j)+1) softmax logits: the last slot is absorption,
     the others are edge probabilities to each child.
-
-    :param G: networkx DiGraph (DAG)
-    :param Y: dict {node: float} target absorption distribution, sum=1
-    :param root: the root node
-    :param num_epochs: number of gradient descent steps
-    :param lr: learning rate
-    :param reg_strength: L2 regularization on the logits
-    :param verbose: if True, prints periodic losses
-
-    :return:
-        (theta_dict, Yhat_dict, loss_history, theta_history)
-          - theta_dict: {node: torch.nn.Parameter} containing final logits
-          - Yhat_dict: {node: float} final predicted absorption
-          - loss_history: list of float, one entry per epoch (the MSE+reg at that epoch)
-          - theta_history: list of dict snapshots of the parameters.
-            Each entry is {node: Tensor} storing a clone of the logits at that epoch.
     """
 
     # 1) Build a stable topological order

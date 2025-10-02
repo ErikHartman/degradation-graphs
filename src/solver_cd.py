@@ -15,22 +15,6 @@ def run_coordinate_descent(
     
     We do a block update on theta[j], one node j at a time in topological order,
     for the specified number of epochs.
-
-    :param G:           networkx.DiGraph (DAG)
-    :param Y:           dict {node: float} target absorption distribution, sum=1
-    :param root:        the root node
-    :param num_epochs:  number of passes over the entire set of nodes
-    :param lr:          step size for gradient updates
-    :param l1_strength: L1 regularization coefficient
-    :param l2_strength: L2 regularization coefficient
-    :param verbose:     if True, prints periodic losses
-
-    :return:
-      theta_dict:   final learned logits (dict of node->Parameter)
-      Yhat_dict:    final predicted absorption distribution
-      loss_history: list of float, the loss after *each epoch*
-      theta_history:list of dict, each dict is {(u,v): w_uv} storing the edge weights
-                    at that point in the iteration.
     """
 
     # 1) Build adjacency info

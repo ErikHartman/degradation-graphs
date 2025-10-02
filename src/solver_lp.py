@@ -4,16 +4,6 @@ import pulp
 def run_lp(G, Y, root, solver_verbose=False):
     """
     Solve for edge probabilities in a DAG via the flow/LP approach.
-
-    :param G: A networkx.DiGraph (assumed DAG).
-    :param Y: dict {node: float} specifying target absorption distribution; sum(Y) = 1.
-    :param root: The root node from which flow starts (inflow=1).
-    :param solver_verbose: If True, prints solver messages.
-    :return:
-       (edge_probs, alpha):
-         - edge_probs: dict {(u,v): probability of transitioning u->v}
-         - alpha: dict {node: absorption_probability_at_node}
-    :raises ValueError: if no feasible solution.
     """
 
     # 1) Create the LP problem
