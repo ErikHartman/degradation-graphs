@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 def run_gradient_descent(
     G, Y, root,
-    num_epochs=1000,
+    epochs=1000,
     lr=0.1,
     l1_strength=0.0,
     l2_strength=0.0,
@@ -14,6 +14,22 @@ def run_gradient_descent(
     Solve for node absorption distribution using a gradient descent approach.
     Each node j has (out_degree(j)+1) softmax logits: the last slot is absorption,
     the others are edge probabilities to each child.
+
+    :param G: networkx DiGraph (DAG)
+    :param Y: dict {node: float} target absorption distribution, sum=1
+    :param root: the root node
+    :param epochs: number of gradient descent steps
+    :param lr: learning rate
+    :param reg_strength: L2 regularization on the logits
+    :param verbose: if True, prints periodic losses
+
+    :return:
+        (theta_dict, Yhat_dict, loss_history, theta_history)
+          - theta_dict: {node: torch.nn.Parameter} containing final logits
+          - Yhat_dict: {node: float} final predicted absorption
+          - loss_history: list of float, one entry per epoch (the MSE+reg at that epoch)
+          - theta_history: list of dict snapshots of the parameters.
+            Each entry is {node: Tensor} storing a clone of the logits at that epoch.
     """
 
     # 1) Build a stable topological order
@@ -106,7 +122,7 @@ def run_gradient_descent(
     loss_history = []
     theta_history = []
 
-    for epoch in range(num_epochs):
+    for epoch in range(epochs):
         # zero out gradients
         optimizer.zero_grad()
 
@@ -128,47 +144,11 @@ def run_gradient_descent(
         theta_history.append(snapshot_w)
 
         # optionally print progress
-        if verbose and (epoch+1) % max(1, (num_epochs//10)) == 0:
-            print(f"Epoch {epoch+1}/{num_epochs}, loss={cur_loss:.6f}")
+        if verbose and (epoch+1) % max(1, (epochs//10)) == 0:
+            print(f"Epoch {epoch+1}/{epochs}, loss={cur_loss:.6f}")
     
     # 7) Final forward pass
     _, final_Yhat = compute_loss()
     final_Yhat = {n: final_Yhat[n].item() for n in all_nodes}
     
     return theta_dict, final_Yhat, loss_history, theta_history
-
-
-def main():
-    # Example usage
-    G = nx.DiGraph()
-    G.add_nodes_from(["Omega","A","B","C"])
-    G.add_edge("Omega","A")
-    G.add_edge("Omega","B")
-    G.add_edge("B","C")
-    
-    root = "Omega"
-    Y = {"Omega":0.1, "A":0.3, "B":0.4, "C":0.2}
-    
-    # run gradient descent
-    (
-        theta_dict,
-        Yhat_dict,
-        loss_history,
-        theta_history
-    ) = run_gradient_descent(
-        G, Y, root,
-        num_epochs=1000,
-        lr=0.1,
-        reg_strength=0.0,
-        verbose=True
-    )
-    
-    print("\nFinal predicted distribution:", Yhat_dict)
-    print("Final loss:", loss_history[-1])
-    print("\nFinal edge weights from the last snapshot:")
-    print(theta_history[-1]) 
-    print("We stored", len(loss_history), "loss entries and", len(theta_history), "theta snapshots.")
-
-
-if __name__ == "__main__":
-    main()

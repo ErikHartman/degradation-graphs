@@ -1,10 +1,10 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from torch_geometric.nn import SAGEConv, global_mean_pool
+from torch_geometric.nn import global_mean_pool, GraphConv
 from torch_geometric.data import Data, DataLoader
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import roc_curve, auc, average_precision_score
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -35,24 +35,19 @@ def define_train_enzymes():
     }
 
 
-
-
-class EnzymeGraphSAGE(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels=2):
+class EnzymeGraphConv(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels):
         super().__init__()
-        self.conv1 = SAGEConv(in_channels, hidden_channels)
-        self.conv2 = SAGEConv(hidden_channels, hidden_channels)
+        self.conv1 = GraphConv(in_channels, hidden_channels)   # supports edge_weight
+        self.conv2 = GraphConv(hidden_channels, hidden_channels)
         self.linear = nn.Linear(hidden_channels, out_channels)
 
-    def forward(self, x, edge_index, batch):
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
+    def forward(self, x, edge_index, batch, edge_weight=None):
+        x = F.relu(self.conv1(x, edge_index, edge_weight=edge_weight))
         x = F.dropout(x, p=0.2, training=self.training)
-        x = self.conv2(x, edge_index)
-        x = F.relu(x)
+        x = F.relu(self.conv2(x, edge_index, edge_weight=edge_weight))
         x = global_mean_pool(x, batch)
-        x = self.linear(x)
-        return F.log_softmax(x, dim=1)
+        return F.log_softmax(self.linear(x), dim=1)
 
 
 def get_position_features(peptide, parent_sequence):
@@ -137,7 +132,8 @@ def train_epoch(model, loader, optimizer, device):
     for data in loader:
         data = data.to(device)
         optimizer.zero_grad()
-        out = model(data.x, data.edge_index, data.batch)
+        out = model(data.x, data.edge_index, data.batch, edge_weight=data.edge_attr.squeeze(1))
+
         loss = F.nll_loss(out, data.y)
         loss.backward()
         optimizer.step()
@@ -153,7 +149,7 @@ def evaluate_with_probs(model, loader, device):
     with torch.no_grad():
         for data in loader:
             data = data.to(device)
-            out = model(data.x, data.edge_index, data.batch)
+            out = model(data.x, data.edge_index, data.batch, edge_weight=data.edge_attr.squeeze(1))
             probs = torch.exp(out)  # Convert log_softmax to probabilities
             all_probs.append(probs.cpu().numpy())
             all_labels.append(data.y.cpu().numpy())
@@ -173,7 +169,7 @@ def train_and_evaluate(train_dataset, val_dataset, epochs=50):
     
     in_channels = train_dataset[0].x.shape[1]
     
-    model = EnzymeGraphSAGE(in_channels=in_channels, hidden_channels=64, out_channels=2).to(device)
+    model = EnzymeGraphConv(in_channels=in_channels, hidden_channels=64, out_channels=2).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-4)
     
     train_losses = []
@@ -190,7 +186,7 @@ def train_and_evaluate(train_dataset, val_dataset, epochs=50):
         for data in val_loader:
             data = data.to(device)
             with torch.no_grad():
-                out = model(data.x, data.edge_index, data.batch)
+                out = model(data.x, data.edge_index, data.batch, edge_weight=data.edge_attr.squeeze(1))
                 loss = F.nll_loss(out, data.y)
                 val_loss += loss.item()
         val_loss /= len(val_loader)
@@ -210,20 +206,7 @@ def train_and_evaluate(train_dataset, val_dataset, epochs=50):
     roc_auc = auc(fpr, tpr)
     
     pr_auc = average_precision_score(labels, elastase_probs)
-    
-    fig, ax = plt.subplots(1, 1, figsize=(2, 2))
-    ax.plot(fpr, tpr, color='#3274A1', lw=2)
-    
-    ax.set_xlim([-0.05, 1.05])
-    ax.set_ylim([-0.05, 1.05])
-    ax.set_xlabel('FPR')
-    ax.set_ylabel('TPR')
-    ax.legend(loc="lower right", frameon=False)
-    
-    sns.despine()
-    plt.tight_layout()
-    plt.savefig('results/figures/roc_curve.png', 
-                dpi=300, bbox_inches='tight')
+
     
     return model, roc_auc, pr_auc
 
@@ -241,7 +224,7 @@ def plot_multi_protein_roc(model, val_dataset, val_proteins, val_enzymes, device
     with torch.no_grad():
         for data in val_loader:
             data = data.to(device)
-            out = model(data.x, data.edge_index, data.batch)
+            out = model(data.x, data.edge_index, data.batch, edge_weight=data.edge_attr.squeeze(1))
             probs = torch.exp(out).cpu().numpy()
             all_probs.append(probs)
             all_labels.append(data.y.cpu().numpy())
@@ -304,7 +287,7 @@ def plot_multi_protein_roc(model, val_dataset, val_proteins, val_enzymes, device
 
     sns.despine()
     plt.tight_layout()
-    plt.savefig('results/figures/multi_protein_roc.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figures/multi_protein_roc.svg', dpi=300, bbox_inches='tight')
     
     print(f"ROC plot saved with {curves_plotted} curves (4 per-protein + 1 overall)")
  
@@ -323,7 +306,7 @@ def plot_enzyme_distributions(model, val_dataset, device):
     with torch.no_grad():
         for data in val_loader:
             data = data.to(device)
-            out = model(data.x, data.edge_index, data.batch)
+            out = model(data.x, data.edge_index, data.batch, edge_weight=data.edge_attr.squeeze(1))
             probs = torch.exp(out).cpu().numpy()
             all_probs.append(probs)
             all_labels.append(data.y.cpu().numpy())
@@ -388,7 +371,7 @@ def plot_enzyme_distributions(model, val_dataset, device):
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.1)
     
-    plt.savefig('results/figures/enzyme_distributions.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figures/enzyme_distributions.svg', dpi=300, bbox_inches='tight')
  
 
 def save_data_split(train_dataset, val_dataset, train_proteins, val_proteins, train_enzymes_split, val_enzymes_split, filename="results/outputs/data_split.pkl"):
@@ -433,7 +416,7 @@ def save_model_results(model, val_dataset, val_proteins, val_enzymes_split, devi
     with torch.no_grad():
         for data in val_loader:
             data = data.to(device)
-            out = model(data.x, data.edge_index, data.batch)
+            out = model(data.x, data.edge_index, data.batch, edge_weight=data.edge_attr.squeeze(1))
             probs = torch.exp(out).cpu().numpy()
             all_probs.append(probs)
             all_labels.append(data.y.cpu().numpy())
@@ -521,7 +504,7 @@ def plot_roc_from_loaded_data(model_results):
 
     sns.despine()
     plt.tight_layout()
-    plt.savefig('results/figures/multi_protein_roc.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figures/multi_protein_roc.svg', dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -586,7 +569,7 @@ def plot_kde_from_loaded_data(model_results):
     sns.despine()
     plt.tight_layout()
     
-    plt.savefig('results/figures/enzyme_distributions.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figures/enzyme_distributions.svg', dpi=300, bbox_inches='tight')
     plt.show()
 
 

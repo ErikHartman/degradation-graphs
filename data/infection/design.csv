@@ -1,0 +1,106 @@
+,sample,group,day,id,sorting_column
+0,Sample 1 Day 1,S. aureus,Day 1,1,b
+1,Sample 2 Day 1,S. aureus,Day 1,2,b
+2,Sample 3 Day 1,S. aureus,Day 1,3,b
+3,Sample 4 Day 1,S. aureus,Day 1,4,b
+4,Sample 5 Day 1,S. aureus,Day 1,5,b
+9,Sample 10 Day 1,S. aureus,Day 1,10,b
+10,Sample 11 Day 1,S. aureus,Day 1,11,b
+11,Sample 12 Day 1,S. aureus,Day 1,12,b
+12,Sample 13 Day 1,S. aureus,Day 1,13,b
+13,Sample 14 Day 1,S. aureus,Day 1,14,b
+14,Sample 15 Day 1,S. aureus,Day 1,15,b
+15,Sample 16 Day 1,S. aureus,Day 1,16,b
+16,Sample 17 Day 1,P. aeruginosa,Day 1,17,a
+17,Sample 18 Day 1,P. aeruginosa,Day 1,18,a
+18,Sample 19 Day 1,P. aeruginosa,Day 1,19,a
+19,Sample 20 Day 1,P. aeruginosa,Day 1,20,a
+20,Sample 21 Day 1,P. aeruginosa,Day 1,21,a
+21,Sample 22 Day 1,P. aeruginosa,Day 1,22,a
+22,Sample 23 Day 1,P. aeruginosa,Day 1,23,a
+23,Sample 24 Day 1,P. aeruginosa,Day 1,24,a
+24,Sample 25 Day 1,P. aeruginosa,Day 1,25,a
+25,Sample 26 Day 1,P. aeruginosa,Day 1,26,a
+26,Sample 27 Day 1,P. aeruginosa,Day 1,27,a
+27,Sample 28 Day 1,P. aeruginosa,Day 1,28,a
+28,Sample 29 Day 1,P. aeruginosa,Day 1,29,a
+29,Sample 30 Day 1,P. aeruginosa,Day 1,30,a
+30,Sample 31 Day 1,P. aeruginosa,Day 1,31,a
+31,Sample 32 Day 1,P. aeruginosa,Day 1,32,a
+32,Sample 33 Day 1,P. aeruginosa,Day 1,33,a
+33,Sample 34 Day 1,Ctrl,Day 1,34,c
+34,Sample 35 Day 1,Ctrl,Day 1,35,c
+35,Sample 36 Day 1,Ctrl,Day 1,36,c
+36,Sample 37 Day 1,Ctrl,Day 1,37,c
+37,Sample 38 Day 1,Ctrl,Day 1,38,c
+38,Sample 39 Day 1,Ctrl,Day 1,39,c
+39,Sample 40 Day 1,Ctrl,Day 1,40,c
+40,Sample 41 Day 1,Ctrl,Day 1,41,c
+41,Sample 42 Day 1,Ctrl,Day 1,42,c
+42,Sample 43 Day 1,Ctrl,Day 1,43,c
+43,Sample 44 Day 1,Ctrl,Day 1,44,c
+44,Sample 45 Day 1,Ctrl,Day 1,45,c
+45,Sample 46 Day 1,Ctrl,Day 1,46,c
+46,Sample 54 Day 1,S. aureus,Day 1,54,b
+47,Sample 55 Day 1,S. aureus,Day 1,55,b
+48,Sample 56 Day 1,S. aureus,Day 1,56,b
+49,Sample 57 Day 1,S. aureus,Day 1,57,b
+50,Sample 66 Day 1,S. aureus,Day 1,66,b
+51,Sample 67 Day 1,S. aureus,Day 1,67,b
+52,Sample 68 Day 1,S. aureus,Day 1,68,b
+53,Sample 69 Day 1,S. aureus,Day 1,69,b
+54,Sample 70 Day 1,S. aureus,Day 1,70,b
+55,Sample 1 Day 2,S. aureus,Day 2,1,b
+56,Sample 2 Day 2,S. aureus,Day 2,2,b
+57,Sample 3 Day 2,S. aureus,Day 2,3,b
+58,Sample 4 Day 2,S. aureus,Day 2,4,b
+59,Sample 5 Day 2,S. aureus,Day 2,5,b
+64,Sample 10 Day 2,S. aureus,Day 2,10,b
+65,Sample 11 Day 2,S. aureus,Day 2,11,b
+66,Sample 12 Day 2,S. aureus,Day 2,12,b
+67,Sample 13 Day 2,S. aureus,Day 2,13,b
+68,Sample 14 Day 2,S. aureus,Day 2,14,b
+69,Sample 15 Day 2,S. aureus,Day 2,15,b
+70,Sample 16 Day 2,S. aureus,Day 2,16,b
+71,Sample 17 Day 2,P. aeruginosa,Day 2,17,a
+72,Sample 18 Day 2,P. aeruginosa,Day 2,18,a
+73,Sample 19 Day 2,P. aeruginosa,Day 2,19,a
+74,Sample 20 Day 2,P. aeruginosa,Day 2,20,a
+75,Sample 21 Day 2,P. aeruginosa,Day 2,21,a
+76,Sample 22 Day 2,P. aeruginosa,Day 2,22,a
+77,Sample 23 Day 2,P. aeruginosa,Day 2,23,a
+78,Sample 24 Day 2,P. aeruginosa,Day 2,24,a
+79,Sample 25 Day 2,P. aeruginosa,Day 2,25,a
+80,Sample 26 Day 2,P. aeruginosa,Day 2,26,a
+81,Sample 27 Day 2,P. aeruginosa,Day 2,27,a
+82,Sample 28 Day 2,P. aeruginosa,Day 2,28,a
+83,Sample 30 Day 2,P. aeruginosa,Day 2,30,a
+84,Sample 31 Day 2,P. aeruginosa,Day 2,31,a
+85,Sample 32 Day 2,P. aeruginosa,Day 2,32,a
+86,Sample 33 Day 2,P. aeruginosa,Day 2,33,a
+87,Sample 34 Day 2,Ctrl,Day 2,34,c
+88,Sample 35 Day 2,Ctrl,Day 2,35,c
+89,Sample 36 Day 2,Ctrl,Day 2,36,c
+90,Sample 37 Day 2,Ctrl,Day 2,37,c
+91,Sample 38 Day 2,Ctrl,Day 2,38,c
+92,Sample 39 Day 2,Ctrl,Day 2,39,c
+93,Sample 40 Day 2,Ctrl,Day 2,40,c
+94,Sample 41 Day 2,Ctrl,Day 2,41,c
+95,Sample 42 Day 2,Ctrl,Day 2,42,c
+96,Sample 43 Day 2,Ctrl,Day 2,43,c
+97,Sample 44 Day 2,Ctrl,Day 2,44,c
+98,Sample 45 Day 2,Ctrl,Day 2,45,c
+99,Sample 46 Day 2,Ctrl,Day 2,46,c
+100,Sample 54 Day 2,Double infection,Day 2,54,d
+101,Sample 55 Day 2,Double infection,Day 2,55,d
+102,Sample 56 Day 2,Double infection,Day 2,56,d
+103,Sample 57 Day 2,Double infection,Day 2,57,d
+104,Sample 66 Day 2,S. aureus,Day 2,66,b
+105,Sample 67 Day 2,S. aureus,Day 2,67,b
+106,Sample 68 Day 2,S. aureus,Day 2,68,b
+107,Sample 69 Day 2,S. aureus,Day 2,69,b
+108,Sample 70 Day 2,S. aureus,Day 2,70,b
+109,Sample 54 Day 3,Double infection,Day 3,54,d
+110,Sample 55 Day 3,Double infection,Day 3,55,d
+111,Sample 56 Day 3,Double infection,Day 3,56,d
+112,Sample 57 Day 3,Double infection,Day 3,57,d
