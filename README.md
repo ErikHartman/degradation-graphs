@@ -20,10 +20,6 @@ This project presents computational methods for modeling and predicting proteoly
 ```
 ├── data/
 │   ├── actb_trp.csv              # β-actin trypsin digestion data
-│   ├── degradomics_2025_02_06.csv # Degradomics dataset (February)
-│   ├── degradomics_2025_10_02.csv # Degradomics dataset (October)
-│   ├── peptidomics_2025_02_06.csv # Peptidomics dataset (February)
-│   ├── peptidomics_2025_10_02.csv # Peptidomics dataset (October)
 │   ├── diabetes/               # Diabetes study data
 │   │   ├── design.csv         # Experimental design
 │   │   └── peptides.txt       # Peptide sequences
