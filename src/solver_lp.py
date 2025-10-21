@@ -10,9 +10,9 @@ def run_lp(G, Y, root, solver_verbose=False):
     :param root: The root node from which flow starts (inflow=1).
     :param solver_verbose: If True, prints solver messages.
     :return:
-       (edge_probs, alpha):
-         - edge_probs: dict {(u,v): probability of transitioning u->v}
-         - alpha: dict {node: absorption_probability_at_node}
+       (theta, Y_hat):
+         - theta: dict {(u,v): probability of transitioning u->v}
+         - Y_hat: dict {node: absorption_probability_at_node}
     :raises ValueError: if no feasible solution.
     """
 
@@ -58,29 +58,29 @@ def run_lp(G, Y, root, solver_verbose=False):
             inflow_val = sum(pulp.value(F_vars[(p, j)]) for p in G.predecessors(j))
             p_in[j] = inflow_val
     
-    edge_probs = {}
-    alpha = {}
+    theta = {}
+    Y_hat = {}
     for j in G.nodes():
         # outflow
         outflow_sum = sum(pulp.value(F_vars[(j, c)]) for c in G.successors(j))
         pj = p_in[j]
         if pj > 1e-12:
             # absorption prob
-            alpha_j = (Y.get(j, 0.0)) / pj
-            alpha[j] = alpha_j
+            Y_hat_j = (Y.get(j, 0.0)) / pj
+            Y_hat[j] = Y_hat_j
             
             # edge prob
             for c in G.successors(j):
                 F_jc = pulp.value(F_vars[(j, c)])
-                edge_probs[(j, c)] = F_jc / pj
+                theta[(j, c)] = F_jc / pj
         else:
             # if pj ~ 0, but Y[j]>0 => not truly feasible, but we should
             # never land here if solver said "Optimal". Edge case: Y[j]=0
-            alpha[j] = 0.0
+            Y_hat[j] = 0.0
             for c in G.successors(j):
-                edge_probs[(j, c)] = 0.0
+                theta[(j, c)] = 0.0
     
-    return edge_probs, alpha
+    return theta, Y_hat
 
 
 def main():
@@ -95,9 +95,9 @@ def main():
     root = "Omega"
     Y = {"Omega": 0.1, "A": 0.3, "B":0.4, "C":0.2}
     
-    w, alpha = run_lp(G, Y, root, solver_verbose=False)
+    w, Y_hat = run_lp(G, Y, root, solver_verbose=False)
     print("Edge probabilities:", w)
-    print("Absorption probabilities:", alpha)
+    print("Absorption probabilities:", Y_hat)
 
 if __name__ == "__main__":
     main()

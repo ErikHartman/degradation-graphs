@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 def run_coordinate_descent(
     G, Y, root,
-    num_epochs=1000,
+    epochs=1000,
     lr=0.1,
     l1_strength=0.0,
     l2_strength=0.0,
@@ -19,7 +19,7 @@ def run_coordinate_descent(
     :param G:           networkx.DiGraph (DAG)
     :param Y:           dict {node: float} target absorption distribution, sum=1
     :param root:        the root node
-    :param num_epochs:  number of passes over the entire set of nodes
+    :param epochs:  number of passes over the entire set of nodes
     :param lr:          step size for gradient updates
     :param l1_strength: L1 regularization coefficient
     :param l2_strength: L2 regularization coefficient
@@ -114,7 +114,7 @@ def run_coordinate_descent(
     loss_history = []
     theta_history = []
 
-    for epoch in range(num_epochs):
+    for epoch in range(epochs):
         # For each node, block update
         for j in all_nodes:
             # Freeze all
@@ -145,8 +145,8 @@ def run_coordinate_descent(
         theta_history.append(snapshot_w)
 
         # (Optional) print progress
-        if verbose and (epoch+1) % max(1, (num_epochs//10)) == 0:
-            print(f"Epoch {epoch+1}/{num_epochs}, loss={current_loss:.6f}")
+        if verbose and (epoch+1) % max(1, (epochs//10)) == 0:
+            print(f"Epoch {epoch+1}/{epochs}, loss={current_loss:.6f}")
     
     # 6) Final check
     final_loss = compute_loss().item()
@@ -175,7 +175,7 @@ def main():
         theta_history
     ) = run_coordinate_descent(
         G, Y, root,
-        num_epochs=1000,
+        epochs=1000,
         lr=0.1,
         l1_strength=0.0,
         l2_strength=0.0,

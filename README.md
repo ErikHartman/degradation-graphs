@@ -1,30 +1,55 @@
-# Modelling Protein Degradation Graphs
+# Modeling Protein Degradation Graphs
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository contains the code implementation for  modeling protein degradation processes through graphs.
+This repository contains the code implementation for modeling protein degradation processes through graphs and machine learning approaches for proteomics analysis.
 
-![Peptide Distribution Loss Visualization](peptide_distribution_loss.png)
+![Peptide Distribution Loss Visualization](results/figures/readme_fig.png)
 
 
 ## Overview
 
 This project presents computational methods for modeling and predicting proteolytic processes using graph-based approaches. We implement several algorithms for simulating enzyme activity, optimizing graph parameters, and solving for edge probabilities in directed acyclic graphs (DAGs) representing protein degradation pathways.
 
-## Repository
+## Overview
+
+This project presents computational methods for modeling and predicting proteolytic processes using graph-based approaches and machine learning. We implement algorithms for simulating enzyme activity, optimizing graph parameters, and solving for edge probabilities in directed acyclic graphs (DAGs) representing protein degradation pathways. The repository includes analysis of both synthetic and real-world proteomics datasets, including diabetes and infection studies.
+
+## Repository Structure
 
 ```
 ├── data/
-│   ├── actb_trp.csv           # β-actin trypsin digestion 
+│   ├── actb_trp.csv              # β-actin trypsin digestion data
+│   ├── diabetes/               # Diabetes study data
+│   │   ├── design.csv         # Experimental design
+│   │   └── peptides.txt       # Peptide sequences
+│   └── infection/             # Infection study data
+│       ├── data.csv          # Raw data
+│       └── design.csv        # Experimental design
 ├── src/
-│   ├── enzyme_gnn.py          # Graph Neural Network model for enzyme activity prediction
-│   ├── fig3_opt_on_graph.ipynb # Example optimization on graph structures
-│   ├── proteolysis_simulator.py # Simulator for proteolytic events
-│   ├── solver_cd.py           # Coordinate descent solver
-│   ├── solver_gd.py           # Gradient descent solver
-│   ├── solver_lp.py           # Linear programming solver
-├── LICENSE                     # MIT License
-└── README.md                  # This file
+│   ├── enzyme_gnn.py             # Graph Neural Network for enzyme activity prediction
+│   ├── proteolysis_simulator.py  # Proteolytic process simulator
+│   ├── solver_cd.py              # Coordinate descent solver
+│   ├── solver_gd.py              # Gradient descent solver
+│   ├── solver_lp.py              # Linear programming solver
+│   ├── util.py                   # Utility functions and graph operations
+│   ├── weight_optimizer.py       # Weight optimization algorithms
+│   ├── optimization_demo.ipynb   # Optimization demonstration notebook
+│   ├── term_trends.ipynb         # Terminal trends analysis notebook
+│   └── in_vivo/                  # In vivo analysis scripts
+│       ├── diabetes.py           # Diabetes dataset analysis
+│       └── infection.py          # Infection dataset analysis
+├── results/
+│   ├── figures/                  # Generated figures and visualizations
+│   │   ├── enzyme_distributions.svg
+│   │   ├── multi_protein_roc.svg
+│   │   ├── peptide_distribution_loss.png
+│   │   └── term_trends.svg
+│   └── outputs/                  # Model outputs and results
+│       ├── data_split.pkl
+│       └── model_results.pkl
+├── LICENSE                       # MIT License
+└── README.md                    # This file
 ```
 
 ## Installation
@@ -32,15 +57,22 @@ This project presents computational methods for modeling and predicting proteoly
 Clone this repository:
 
 ```bash
-git clone https://github.com/yourusername/public-degradation-graphs.git
-cd public-degradation-graphs
+git clone https://github.com/ErikHartman/degradation-graphs.git
+cd degradation-graphs
 ```
 
-### Requirements
+### Environment Setup
 
-This project requires Python and the following dependencies:
+This project uses a virtual environment. To set up the environment:
 
 ```bash
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On macOS/Linux
+# or
+.venv\Scripts\activate     # On Windows
+
+# Install dependencies
 pip install numpy scipy pandas matplotlib seaborn networkx torch torch-geometric scikit-learn pulp
 ```
 
@@ -49,10 +81,10 @@ pip install numpy scipy pandas matplotlib seaborn networkx torch torch-geometric
 
 ### Proteolysis Simulation
 
-A proteolysis simulator is defined in `proteolysis_simulator.py`. It enables the modeling of enzyme activity on protein sequences:
+The proteolysis simulator in `proteolysis_simulator.py` enables modeling of enzyme activity on protein sequences:
 
 ```python
-from proteolysis_simulator import Enzyme, ProteolysisSimulator
+from src.proteolysis_simulator import Enzyme, ProteolysisSimulator
 
 # Define an enzyme with specific cleavage rules (e.g., trypsin)
 trypsin = Enzyme([("(.)(.)([R|K])([^P])(.)(.)", 1)])
@@ -62,23 +94,22 @@ protein_sequence = "MDDDIAALVVDNGSGMCKAGFAGDDAPRAVFPSIVGRPR"
 
 # Initialize simulator and generate peptides
 simulator = ProteolysisSimulator(protein_sequence)
-peptides = simulator.simulate_digestion(trypsin, n_steps=100)
+peptides = simulator.simulate_digestion(trypsin, n_steps=100)  # Returns dict of peptide:abundance
 ```
 
 ### Graph Neural Network for Enzyme Activity Prediction
 
-The `enzyme_gnn.py` module implements a GraphSAGE model to predict graph types.
+The `enzyme_gnn.py` module implements a GraphSAGE model for predicting enzyme activity patterns:
 
-![](enzyme_distributions.png)
+![Enzyme Distributions](results/figures/enzyme_distributions.svg)
 
+### Weight Optimization
 
-### Graph Optimization
-
-To use the solvers for optimizing degradation graphs:
+The `weight_optimizer.py` module provides multiple optimization algorithms:
 
 ```python
+from src.weight_optimizer import WeightOptimizer
 import networkx as nx
-from solver_lp import run_lp
 
 # Create a directed acyclic graph
 G = nx.DiGraph()
@@ -88,9 +119,34 @@ G.add_edges_from([("Omega", "A"), ("A", "B"), ("A", "C"),
 # Define target absorption distribution
 Y = {"A": 0.1, "B": 0.2, "C": 0.3, "D": 0.1, "E": 0.1, "F": 0.2}
 
-# Run linear programming solver
-edge_probs, absorption = run_lp(G, Y, root="Omega")
+# Initialize optimizer and run linear programming
+optimizer = WeightOptimizer()
+optimizer.linear_programming(G, Y, root="Omega")
 ```
+
+### In Vivo Analysis
+
+Run analysis on real-world datasets:
+
+```bash
+# Analyze diabetes dataset
+python src/in_vivo/diabetes.py
+
+# Analyze infection dataset
+python src/in_vivo/infection.py
+```
+
+### Notebooks
+
+Interactive analysis notebooks are available in the `src/` directory:
+- `optimization_demo.ipynb`: Demonstrates optimization algorithms on graph structures
+- `term_trends.ipynb`: Analysis of terminal trends in degradation processes
+
+## Results
+
+Generated figures and analysis results are stored in the `results/` directory:
+- `figures/`: Visualizations including ROC curves, distributions, and trends
+- `outputs/`: Serialized model results and data splits
 
 ## Acknowledgments
 
