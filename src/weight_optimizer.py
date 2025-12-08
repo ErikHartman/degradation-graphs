@@ -26,10 +26,10 @@ class WeightOptimizer:
         self.cd_theta_history = theta_history
         return theta_history[-1]
 
-    def gradient_descent(self, G, Y, root, *args, **kwargs):
+    def gradient_descent(self, G, Y, root, seed=None, *args, **kwargs):
         Y = normalize_dict(Y)
         theta_dict, Yhat_dict, loss_history, theta_history = run_gradient_descent(
-            G, Y, root, *args, **kwargs
+            G, Y, root, seed=seed, *args, **kwargs
         )
         self.gd_theta_dict = theta_dict
         self.gd_Yhat_dict = Yhat_dict
