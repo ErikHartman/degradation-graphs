@@ -36,14 +36,6 @@ class EnzymeGraphConv(nn.Module):
 def load_real_data(csv_path, protein, treatment_cols):
     """
     Load real peptide data for a specific protein and treatment columns.
-    
-    Args:
-        csv_path: Path to the CSV file
-        protein: Protein name (e.g., "ACTB")
-        treatment_cols: List of treatment column prefixes (e.g., ["trp", "el"])
-    
-    Returns:
-        DataFrame with peptide sequences and abundances per sample
     """
     df = pd.read_csv(csv_path)
     
@@ -71,18 +63,6 @@ def load_real_data(csv_path, protein, treatment_cols):
 
 
 def build_degradation_graph(peptides, parent_sequence):
-    """
-    Build a directed graph where edges represent degradation relationships.
-    The parent sequence is the root, and edges go from parent to peptides,
-    and from larger peptides to smaller peptides they contain.
-    
-    Args:
-        peptides: List of peptide sequences
-        parent_sequence: Parent protein sequence (root of degradation graph)
-    
-    Returns:
-        NetworkX directed graph with degradation edges
-    """
     G = nx.DiGraph()
     
     # Add parent sequence as root node
@@ -129,15 +109,6 @@ def get_position_features(peptide, parent_sequence):
 def create_graph_from_sample(peptide_df, sample_cols, parent_sequence, label):
     """
     Create a PyTorch Geometric graph from peptide abundances in one sample.
-    
-    Args:
-        peptide_df: DataFrame with peptide sequences
-        sample_cols: Columns for this sample's abundances
-        parent_sequence: Parent protein sequence
-        label: Class label (0 or 1)
-    
-    Returns:
-        PyTorch Geometric Data object
     """
     # Get peptides and their abundances
     peptides = peptide_df['Peptide'].tolist()
@@ -319,8 +290,7 @@ def plot_roc(all_fold_results, treatment_names, save_path='results/figures/real_
     """Plot ROC curves with cross-validation folds."""
     from sklearn.preprocessing import label_binarize
     from sklearn.metrics import roc_auc_score
-    from itertools import cycle
-    
+
     n_classes = len(treatment_names)
     
     if n_classes == 2:
@@ -415,14 +385,6 @@ def plot_roc(all_fold_results, treatment_names, save_path='results/figures/real_
 def plot_peptidome(V_Omega: str, P_M: dict, ax, max_range=None, cmap=None, center_colormap=True):
     """
     Plots peptides along the backbone of V_Omega colored by fold change or intensity.
-    
-    - Each peptide in P_M is drawn as a horizontal line at some 'height' 
-      (so that lines do not overlap).
-    - The color is determined by P_M[sequence] (fold change or intensity via cmap).
-    
-    Args:
-        center_colormap: If True, centers colormap around 0 (for fold changes).
-                        If False, uses full range from min to max (for intensities).
     """
     
     # Create custom Orange-Blue colormap with white center (for fold changes)
@@ -502,15 +464,6 @@ def plot_peptidome(V_Omega: str, P_M: dict, ax, max_range=None, cmap=None, cente
 def calculate_peptide_fold_changes(peptide_df, treatment_data, treatment_cols, parent_sequence):
     """
     Calculate log2 fold changes for each peptide between two treatments.
-    
-    Args:
-        peptide_df: DataFrame with peptide sequences
-        treatment_data: Dict mapping treatment names to column lists
-        treatment_cols: List of two treatment names
-        parent_sequence: Parent protein sequence
-    
-    Returns:
-        Dict mapping peptide sequences to log2 fold changes
     """
     peptides = peptide_df['Peptide'].tolist()
     

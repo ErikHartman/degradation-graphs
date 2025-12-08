@@ -8,7 +8,9 @@ def run_gradient_descent(
     lr=0.1,
     l1_strength=0.0,
     l2_strength=0.0,
-    verbose=True
+    verbose=True,
+    seed=None,
+    init_scale=0.1
 ):
     """
     Solve for node absorption distribution using a gradient descent approach.
@@ -20,8 +22,12 @@ def run_gradient_descent(
     :param root: the root node
     :param epochs: number of gradient descent steps
     :param lr: learning rate
-    :param reg_strength: L2 regularization on the logits
+    :param l1_strength: L1 regularization strength
+    :param l2_strength: L2 regularization strength
     :param verbose: if True, prints periodic losses
+    :param seed: random seed for parameter initialization. If None, initialize with zeros.
+                 If provided, initialize with random values scaled by init_scale.
+    :param init_scale: scale factor for random initialization when seed is provided
 
     :return:
         (theta_dict, Yhat_dict, loss_history, theta_history)
@@ -31,17 +37,28 @@ def run_gradient_descent(
           - theta_history: list of dict snapshots of the parameters.
             Each entry is {node: Tensor} storing a clone of the logits at that epoch.
     """
+    
+    # Set random seed if provided
+    if seed is not None:
+        torch.manual_seed(seed)
 
     # 1) Build a stable topological order
     all_nodes = list(nx.topological_sort(G))
     node_to_children = {n: list(G.successors(n)) for n in all_nodes}
     
-    # 2) Create parameters
+    # 2) Create parameters with optional random initialization
     theta_dict = {}
     for n in all_nodes:
         out_deg = len(node_to_children[n])
         # out_deg + 1 => child-edge slots + 1 absorption
-        param = torch.nn.Parameter(torch.zeros(out_deg + 1, dtype=torch.float))
+        if seed is None:
+            # Initialize with zeros (default behavior)
+            param = torch.nn.Parameter(torch.zeros(out_deg + 1, dtype=torch.float))
+        else:
+            # Random initialization when seed is provided
+            param = torch.nn.Parameter(
+                torch.randn(out_deg + 1, dtype=torch.float) * init_scale
+            )
         theta_dict[n] = param
     
     # 3) We'll collect these parameters into an optimizer
